@@ -27,6 +27,11 @@ struct Cli {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    if !&cli.word.chars().all(|c| c.is_alphabetic()) {
+        cprintln!("<red>Invalid input: Word must contain only alphabetic characters.</red>");
+        std::process::exit(1);
+    }
+
     let mut chars = cli.word.chars().clone();
     let first = chars.next().unwrap();
 
@@ -38,8 +43,6 @@ fn main() -> Result<()> {
         let path = PathBuf::from(String::from(first));
         path.into()
     };
-
-    dbg!(&target);
 
     let contents = read_data(target.into())?;
 
