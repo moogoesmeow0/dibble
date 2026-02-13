@@ -57,21 +57,34 @@ fn main() -> Result<()> {
 fn read_data(path: PathBuf) -> Result<String> {
     let dirs: ProjectDirs = ProjectDirs::from("com.taranathan.dibble", "taran", "dibble").unwrap();
 
-    // let mut file = File::open(dirs.data_dir())?;
-    // let mut contents = String::new();
-    // file.read_to_string(&mut contents)?;
+    let mut user_target = dirs.data_dir().to_path_buf();
+    user_target.push(Path::new("dict"));
+    user_target.push(&path);
+    user_target.set_extension("json");
 
-    let mut target = dirs.data_dir().to_path_buf();
-    target.push(Path::new("dict"));
-    target.push(path);
-    target.set_extension("json");
-    dbg!(&target);
+    let mut system_target = PathBuf::from("/usr/share/dibble/dict");
+    system_target.push(&path);
+    system_target.set_extension("json");
 
-    let mut file = File::open(target)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    if let Ok(mut file) = File::open(&user_target) {
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        return Ok(contents);
+    }
 
-    return Ok(contents);
+    // system installation fallback
+    if let Ok(mut file) = File::open(&system_target) {
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        return Ok(contents);
+    }
+
+    // If both failed, return a helpful error
+    anyhow::bail!(
+        "Dictionary file not found. Searched:\n  - {}\n  - {}",
+        user_target.display(),
+        system_target.display()
+    )
 }
 
 pub type DictionaryFile = HashMap<String, Definition>;
