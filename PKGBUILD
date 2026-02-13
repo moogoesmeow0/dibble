@@ -1,3 +1,5 @@
+# Maintainer: Moogoesmeow moogoesmeow123@gmail.com
+
 pkgname="dibble"
 pkgver="0.1.1"
 pkgrel="1"
