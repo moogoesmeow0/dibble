@@ -13,7 +13,7 @@ use std::{
 
 #[derive(Parser)]
 #[command(name = "dibble")]
-#[command(version = "1.2")]
+#[command(version = "0.1.3")]
 #[command(about = "Quick and local word definitions", long_about = None)]
 struct Cli {
     /// The word to define
