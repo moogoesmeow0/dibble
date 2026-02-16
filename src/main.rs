@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use color_print::cprintln;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
@@ -13,14 +13,14 @@ use std::{
 
 #[derive(Parser)]
 #[command(name = "dibble")]
-#[command(version = "1.0")]
+#[command(version = "1.2")]
 #[command(about = "Quick and local word definitions", long_about = None)]
 struct Cli {
     /// The word to define
     word: String,
 
     /// Don't show example sentences
-    #[arg(action, long, short)]
+    #[arg(action = ArgAction::SetTrue, long, short)]
     no_examples: bool,
 }
 
@@ -32,7 +32,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
     }
 
-    let mut chars = cli.word.chars().clone();
+    let word = cli.word.to_lowercase();
+    let mut chars = word.chars();
     let first = chars.next().unwrap();
 
     let target: PathBuf = if let Some(second) = chars.next() {
@@ -40,7 +41,8 @@ fn main() -> Result<()> {
         path.push(format!("{}{}", String::from(first), String::from(second)));
         path
     } else {
-        let path = PathBuf::from(String::from(first));
+        let mut path = PathBuf::from(String::from(first));
+        path.push(String::from(first));
         path.into()
     };
 
@@ -49,7 +51,7 @@ fn main() -> Result<()> {
     let data: DictionaryFile = from_str(&contents)?;
 
     if let Some(f) = data.get(&cli.word) {
-        f.print_colored();
+        f.print_colored(!cli.no_examples);
     } else {
         cprintln!("<red>Word not found: {}</red>", cli.word);
     }
@@ -69,6 +71,16 @@ fn read_data(path: PathBuf) -> Result<String> {
     system_target.push(&path);
     system_target.set_extension("json");
 
+    let mut local = PathBuf::from("./dict");
+    local.push(&path);
+    local.set_extension("json");
+
+    if let Ok(mut file) = File::open(&local) {
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        return Ok(contents);
+    }
+
     if let Ok(mut file) = File::open(&user_target) {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -82,7 +94,6 @@ fn read_data(path: PathBuf) -> Result<String> {
         return Ok(contents);
     }
 
-    // If both failed, return a helpful error
     anyhow::bail!(
         "Dictionary file not found. Searched:\n  - {}\n  - {}",
         user_target.display(),
@@ -131,7 +142,7 @@ pub struct Sense {
 }
 
 impl Definition {
-    pub fn print_colored(&self) {
+    pub fn print_colored(&self, examples: bool) {
         //header
         cprintln!("<bold><cyan>{}</cyan></bold>", self.word);
 
@@ -152,9 +163,10 @@ impl Definition {
                         }
                     }
 
-                    // Print examples if available
-                    for example in &sense.examples {
-                        cprintln!("       <dim>\"{}\"</dim>", example);
+                    if examples {
+                        for example in &sense.examples {
+                            cprintln!("       <dim>\"{}\"</dim>", example);
+                        }
                     }
                 }
                 cprintln!();
