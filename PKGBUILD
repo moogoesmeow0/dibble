@@ -1,5 +1,5 @@
 pkgname="dibble"
-pkgver="0.1.3"
+pkgver="0.1.4"
 pkgrel="3"
 pkgdesc="A quick and local cli tool for word definitions"
 arch=(any)
